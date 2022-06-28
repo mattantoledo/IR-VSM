@@ -8,6 +8,7 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 
+# Tokenize, filter and stem the words of the document
 def pre_process(record):
 
     stemmer = PorterStemmer()
@@ -35,7 +36,7 @@ def pre_process(record):
     return rec_num, tokens
 
 
-# Compute bag of words with frequencies for specific document
+# Compute bag of words with frequencies for tokens of specific document
 def compute_bag_count(tokens):
 
     bag = {}
@@ -53,8 +54,8 @@ def print_inverted_index(inverted_index):
     for k, d in inverted_index.items():
         print(k)
         print(d['df'])
-        for t in d['list']:
-            print(t)
+        for t, c in d['doc_tf'].items():
+            print(t,c)
         print("*************")
 
 
@@ -87,18 +88,20 @@ def create_index(directory_path, limit=True):
             for token, count in tokens_count.items():
 
                 if token not in inverted_index:
-                    inverted_index[token] = {'df': 0, 'list': []}
+                    inverted_index[token] = {'df': 0, 'doc_tf': {}}
 
                 inverted_index[token]['df'] += 1
-                inverted_index[token]['list'].append((doc_num, count))
+                inverted_index[token]['doc_tf'][doc_num] = count
 
             n += 1
 
             if limit and n >= 15:
-                print_inverted_index(inverted_index)
+                #print_inverted_index(inverted_index)
+                print(inverted_index)
                 return
 
     print_inverted_index(inverted_index)
+    print(inverted_index)
 
 
 def main(argv):
