@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 import math
@@ -16,7 +17,7 @@ def pre_process(record):
 
     tokens = []
 
-    rec_num = record.xpath("./RECORDNUM/text()")[0]
+    rec_num = int(record.xpath("./RECORDNUM/text()")[0])
 
     # Use XPATH to extract all words from TITLE, ABSTRACT, EXTRACT
     data = record.xpath("./TITLE/text()") + record.xpath("./EXTRACT/text()") + record.xpath("./ABSTRACT/text()")
@@ -94,7 +95,7 @@ def build_inverted_index(directory_path, limit=True):
                 inverted_index[token]['doc_tf'][doc_num] = count
 
             n += 1
-            if limit and n >= 15:
+            if limit and n >= 10:
                 break
 
         if limit and n >= 15:
@@ -103,8 +104,8 @@ def build_inverted_index(directory_path, limit=True):
     return inverted_index, n
 
 
+# Compute IDF for every token, and add to the index
 def add_idf_to_inverted_index(inverted_index, n):
-    # Compute IDF for every token
     for token in inverted_index.keys():
         n_t = inverted_index[token]['df']
         idf = math.log(n/n_t, 2)
@@ -113,10 +114,12 @@ def add_idf_to_inverted_index(inverted_index, n):
     return inverted_index
 
 
+# Compute document length for every document and return dictionary of all lengths
 def compute_document_lengths(inverted_index):
 
     document_lengths = {}
-    # Compute document vector norm squared (sum of squares of tf-idf)
+
+    # Compute document vector length (sum of squares of tf-idf)
     for token in inverted_index.keys():
         idf = inverted_index[token]['idf']
         for doc_num, tf in inverted_index[token]['doc_tf'].items():
@@ -125,7 +128,7 @@ def compute_document_lengths(inverted_index):
             else:
                 document_lengths[doc_num] = (tf * idf) ** 2
 
-    # Square root to get the norm of the document vector
+    # Square root to get the norm of the document
     for doc_num in document_lengths.keys():
         document_lengths[doc_num] = math.sqrt(document_lengths[doc_num])
 
@@ -140,8 +143,10 @@ def create_index(directory_path):
 
     document_lengths = compute_document_lengths(inverted_index)
 
-    print(document_lengths)
-    print(inverted_index)
+    index_and_lengths = {'index': inverted_index, 'lengths': document_lengths}
+
+    with open('vsm_inverted_index.json', 'w') as outfile:
+        json.dump(index_and_lengths, outfile)
 
 
 def main(argv):
