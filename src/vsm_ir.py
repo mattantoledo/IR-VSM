@@ -8,11 +8,25 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 
+# Compute bag of words with frequencies for specific document
+def compute_bag_count(tokens):
+
+    bag = {}
+
+    for word in tokens:
+        if word in bag:
+            bag[word] += 1
+        else:
+            bag[word] = 1
+
+    return bag
+
+
 def pre_process(record):
 
     # Creating dictionary from RECORD using XPath
     d = {
-        'RECORDNUM': record.xpath("./RECORDNUM/text()"),
+        'RECORDNUM': record.xpath("./RECORDNUM/text()")[0],
         'TITLE': record.xpath("./TITLE/text()"),
         'EXTRACT': record.xpath("./EXTRACT/text()"),
         'ABSTRACT': record.xpath("./ABSTRACT/text()")
@@ -26,12 +40,8 @@ def pre_process(record):
     # Lowercase
     data = [word.lower() for word in data]
 
-    # Remove single character words (also punctuation)
-    data = [word for word in data if len(word) > 1]
-
-    # Remove numbers
-    data = [word for word in data if not word.replace(',', '').isnumeric()]
-    data = [word for word in data if not word.replace('.', '').isnumeric()]
+    # Keep only alphabetic words and words with length > 1
+    data = [word for word in data if word.isalpha() and len(word) > 1]
 
     # Remove stopwords
     data = [word for word in data if word not in stopwords.words('english')]
@@ -41,37 +51,57 @@ def pre_process(record):
     stemmer = PorterStemmer()
     data = [stemmer.stem(word) for word in data]
 
-    return data
+    return d['RECORDNUM'], data, compute_bag_count(data)
 
 
-def create_index(directory_path):
+def print_inverted_index(inverted_index):
+    for k, d in inverted_index.items():
+        print(k)
+        print(d['df'])
+        for t in d['list']:
+            print(t)
+        print("*************")
 
+
+def create_index(directory_path, limit=True):
+
+    inverted_index = {}
     n = 0
-    limit = True
 
+    # Traverse on XML files in the given directory
     for filename in os.listdir(directory_path):
-        if filename.endswith(".xml"):
-            file_path = os.path.join(directory_path, filename)
-            tree = etree.parse(file_path)
-            root = tree.getroot()
 
-            record_list = root.xpath("/root/RECORD")
+        if not filename.endswith(".xml"):
+            continue
 
-            for record in record_list:
+        # Use the file path to parse the XML file to etree element
+        file_path = os.path.join(directory_path, filename)
+        tree = etree.parse(file_path)
+        root = tree.getroot()
 
-                tokens = pre_process(record)
+        # Use XPATH to build a list of all records in the XML file
+        doc_list = root.xpath("/root/RECORD")
 
-                print("******")
-                print(tokens)
-                print(len(tokens))
+        # Compute record_num, list of tokens (after pre-processing) with frequency count
+        for doc in doc_list:
 
-                n += 1
+            doc_num, tokens, tokens_count = pre_process(doc)
 
-                if limit and n >= 150:
-                    print(n)
-                    return
+            for token, count in tokens_count.items():
 
-    print(n)
+                if token not in inverted_index:
+                    inverted_index[token] = {'df': 0, 'list': []}
+
+                inverted_index[token]['df'] += 1
+                inverted_index[token]['list'].append((doc_num, count))
+
+            n += 1
+
+            if limit and n >= 15:
+                print_inverted_index(inverted_index)
+                return
+
+    print_inverted_index(inverted_index)
 
 
 def main(argv):
