@@ -57,7 +57,9 @@ def compute_term_frequencies(terms):
     return tf
 
 
-def create_index(directory_path, limit=True):
+# Iterate on every document, pre-process and build inverted index
+# Return inverted_index and n = number of documents
+def build_inverted_index(directory_path, limit=True):
 
     inverted_index = {}
     n = 0
@@ -98,12 +100,47 @@ def create_index(directory_path, limit=True):
         if limit and n >= 15:
             break
 
+    return inverted_index, n
+
+
+def add_idf_to_inverted_index(inverted_index, n):
     # Compute IDF for every token
     for token in inverted_index.keys():
         n_t = inverted_index[token]['df']
         idf = math.log(n/n_t, 2)
         inverted_index[token]['idf'] = idf
 
+    return inverted_index
+
+
+def compute_document_lengths(inverted_index):
+
+    document_lengths = {}
+    # Compute document vector norm squared (sum of squares of tf-idf)
+    for token in inverted_index.keys():
+        idf = inverted_index[token]['idf']
+        for doc_num, tf in inverted_index[token]['doc_tf'].items():
+            if doc_num in document_lengths:
+                document_lengths[doc_num] += (tf * idf) ** 2
+            else:
+                document_lengths[doc_num] = (tf * idf) ** 2
+
+    # Square root to get the norm of the document vector
+    for doc_num in document_lengths.keys():
+        document_lengths[doc_num] = math.sqrt(document_lengths[doc_num])
+
+    return document_lengths
+
+
+def create_index(directory_path):
+
+    inverted_index, n = build_inverted_index(directory_path, limit=True)
+
+    inverted_index = add_idf_to_inverted_index(inverted_index, n)
+
+    document_lengths = compute_document_lengths(inverted_index)
+
+    print(document_lengths)
     print(inverted_index)
 
 
