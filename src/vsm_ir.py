@@ -26,15 +26,15 @@ def pre_process(record):
     # Lowercase
     data = [word.lower() for word in data]
 
+    # Remove single character words (also punctuation)
+    data = [word for word in data if len(word) > 1]
+
+    # Remove numbers
+    data = [word for word in data if not word.replace(',', '').isnumeric()]
+    data = [word for word in data if not word.replace('.', '').isnumeric()]
+
     # Remove stopwords
     data = [word for word in data if word not in stopwords.words('english')]
-
-    # Remove punctuation
-    punctuation = "!#$%&()*+-.,/:;<=>?@[]^_`{|}~\\"
-    data = [word for word in data if word not in punctuation]
-
-    # Remove single character words
-    data = [word for word in data if len(word) > 1]
 
     # TODO note in the documentation that we used stemming
     # Stem tokens using Porter Stemmer
@@ -47,7 +47,7 @@ def pre_process(record):
 def create_index(directory_path):
 
     n = 0
-    limit = 1
+    limit = True
 
     for filename in os.listdir(directory_path):
         if filename.endswith(".xml"):
@@ -67,7 +67,7 @@ def create_index(directory_path):
 
                 n += 1
 
-                if limit and n >= 10:
+                if limit and n >= 150:
                     print(n)
                     return
 
