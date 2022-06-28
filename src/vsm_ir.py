@@ -1,5 +1,6 @@
 import sys
 import os
+import math
 from lxml import etree
 
 # TODO document nltk.download('popular') command in python console
@@ -50,15 +51,6 @@ def compute_bag_count(tokens):
     return bag
 
 
-def print_inverted_index(inverted_index):
-    for k, d in inverted_index.items():
-        print(k)
-        print(d['df'])
-        for t, c in d['doc_tf'].items():
-            print(t,c)
-        print("*************")
-
-
 def create_index(directory_path, limit=True):
 
     inverted_index = {}
@@ -94,13 +86,18 @@ def create_index(directory_path, limit=True):
                 inverted_index[token]['doc_tf'][doc_num] = count
 
             n += 1
-
             if limit and n >= 15:
-                #print_inverted_index(inverted_index)
-                print(inverted_index)
-                return
+                break
 
-    print_inverted_index(inverted_index)
+        if limit and n >= 15:
+            break
+
+    # Compute IDF for every token
+    for token in inverted_index.keys():
+        n_t = inverted_index[token]['df']
+        idf = math.log(n/n_t, 2)
+        inverted_index[token]['idf'] = idf
+
     print(inverted_index)
 
 
