@@ -37,18 +37,24 @@ def pre_process(record):
     return rec_num, tokens
 
 
-# Compute bag of words with frequencies for tokens of specific document
-def compute_bag_count(tokens):
+# Compute term frequencies for a specific document
+def compute_term_frequencies(terms):
 
-    bag = {}
+    tf = {}
+    max_count = 1
 
-    for word in tokens:
-        if word in bag:
-            bag[word] += 1
+    for term in terms:
+        if term in tf:
+            tf[term] += 1
+            if tf[term] > max_count:
+                max_count = tf[term]
         else:
-            bag[word] = 1
+            tf[term] = 1
 
-    return bag
+    for term in tf:
+        tf[term] = tf[term] / max_count
+
+    return tf
 
 
 def create_index(directory_path, limit=True):
@@ -75,7 +81,7 @@ def create_index(directory_path, limit=True):
 
             doc_num, tokens = pre_process(doc)
 
-            tokens_count = compute_bag_count(tokens)
+            tokens_count = compute_term_frequencies(tokens)
 
             for token, count in tokens_count.items():
 
