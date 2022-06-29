@@ -98,7 +98,7 @@ def build_inverted_index(directory_path, limit=True):
             if limit and n >= 10:
                 break
 
-        if limit and n >= 15:
+        if limit and n >= 10:
             break
 
     return inverted_index, n
