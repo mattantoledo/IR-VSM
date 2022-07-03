@@ -43,8 +43,8 @@ class Evaluator:
 
         for query_num, d in self.true_query_results.items():
             question = d['question']
-            vsm_model.retrieve_top_docs(ranking, question)
-            my_top_docs = [t[0] for t in vsm_model.top_docs]
+            top_docs = vsm_model.retrieve_top_docs(ranking, question)
+            my_top_docs = [t[0] for t in top_docs]
             self.my_query_results[query_num] = {'question': question, 'top_docs': my_top_docs}
 
         return

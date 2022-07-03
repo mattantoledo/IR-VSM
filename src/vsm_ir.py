@@ -52,11 +52,28 @@ def compute_term_frequencies(data_str):
     return tokens_tf
 
 
+def save_top_docs(top_docs):
+
+    with open(VSM.TOP_DOCS_PATH, 'w') as outfile:
+        for result in top_docs:
+            outfile.write(result[0] + '\n')
+    return
+
+
+def modify_tf_bm25(tf, d, avgdl):
+
+    k = VSM.BM_25_K
+    b = VSM.BM_25_b
+    x = tf * (k + 1)
+    y = tf + k * (1 - b + b * (d / avgdl))
+
+    return x/y
+
+
 class VSM:
 
     INDEX_PATH = 'vsm_inverted_index.json'
     TOP_DOCS_PATH = 'ranked_query_docs.txt'
-    MAX_DOCUMENTS = 100
     RESULTS_THRESHOLD = 10
     BM_25_K = 1.2
     BM_25_b = 0.75
@@ -66,8 +83,6 @@ class VSM:
         self.document_vector_norms = {}
         self.document_lengths = {}
         self.document_number = 0
-        self.top_docs = []
-        self.limit = False
 
     def add_doc_data_to_index(self, data_str, doc_num):
 
@@ -108,9 +123,6 @@ class VSM:
 
             # Compute record_num, list of tokens (after pre-processing) with frequency count
             for doc in doc_list:
-
-                if self.limit and self.document_number >= VSM.MAX_DOCUMENTS:
-                    break
 
                 doc_num = int(doc.xpath("./RECORDNUM/text()")[0])
 
@@ -181,7 +193,6 @@ class VSM:
 
         query_length = 0
         document_scores = {}
-        self.top_docs = []
 
         n = self.document_number
         avgdl = sum(self.document_lengths.values()) / self.document_number
@@ -212,7 +223,8 @@ class VSM:
                     score = w * idf * tf
 
                 elif ranking == 'bm25':
-                    tf_bm25 = self.modify_tf_bm25(tf, doc_num, avgdl)
+                    d = self.document_lengths[doc_num]
+                    tf_bm25 = modify_tf_bm25(tf, d, avgdl)
                     score = tf_bm25 * idf_bm25
 
                 document_scores[doc_num] += score
@@ -225,25 +237,8 @@ class VSM:
                 y = self.document_vector_norms[doc_num]
                 document_scores[doc_num] = s / (l * y)
 
-        self.top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
-        return
-
-    def modify_tf_bm25(self, tf, doc_num, avgdl):
-
-        k = VSM.BM_25_K
-        b = VSM.BM_25_b
-        d = self.document_lengths[doc_num]
-        x = tf * (k + 1)
-        y = tf + k * (1 - b + b * (d / avgdl))
-
-        return x/y
-
-    def save_top_docs(self):
-
-        with open(VSM.TOP_DOCS_PATH, 'w') as outfile:
-            for result in self.top_docs:
-                outfile.write(result[0] + '\n')
-        return
+        top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
+        return top_docs
 
 
 def main(argv):
@@ -279,13 +274,12 @@ def main(argv):
             return
 
         vsm_model.load_index_and_lengths(index_path)
-        vsm_model.retrieve_top_docs(ranking, question)
+        top_docs = vsm_model.retrieve_top_docs(ranking, question)
+        save_top_docs(top_docs)
 
         print(question)
-        for result in vsm_model.top_docs:
+        for result in top_docs:
             print(result[0])
-
-        vsm_model.save_top_docs()
 
         print('query done')
         return
