@@ -38,21 +38,12 @@ class Evaluator:
     def build_my_query_results(self, ranking):
 
         vsm_model = VSM()
-        vsm_model.ranking = ranking
 
         vsm_model.load_index_and_lengths(VSM.INDEX_PATH)
 
         for query_num, d in self.true_query_results.items():
             question = d['question']
-
-            vsm_model.extract_tokens(question)
-            vsm_model.compute_term_frequencies()
-
-            if ranking == 'tfidf':
-                vsm_model.retrieve_top_docs_tf_idf()
-            elif ranking == 'bm25':
-                vsm_model.retrieve_top_docs_bm25()
-
+            vsm_model.retrieve_top_docs(ranking, question)
             my_top_docs = [t[0] for t in vsm_model.top_docs]
             self.my_query_results[query_num] = {'question': question, 'top_docs': my_top_docs}
 

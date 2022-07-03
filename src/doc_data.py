@@ -4,7 +4,7 @@ import os
 from lxml import etree
 
 XML_PATH = "C:\\Users\\MattanToledo\\PycharmProjects\\IR-VSM\\data\\cfc-xml"
-DOC_DATA_PATH = "C:\\Users\\MattanToledo\\PycharmProjects\\IR-VSM\\data\\doc_data\\data.json"
+DOC_DATA_PATH = "C:\\Users\\MattanToledo\\PycharmProjects\\IR-VSM\\data\\doc_data\\doc_data.json"
 
 
 def build_doc_data():
@@ -46,14 +46,24 @@ def save_docs_data(d):
     return
 
 
+def load_docs_data():
+
+    with open(DOC_DATA_PATH, 'r') as outfile:
+        d = json.load(outfile)
+    return d
+
+
 def main(argv):
 
-    d = build_doc_data()
-    save_docs_data(d)
+    # This is done one time only
+    # d = build_doc_data()
+    # save_docs_data(d)
 
-    while(True):
-        doc_num = int(input())
-        if doc_num == 0:
+    d = load_docs_data()
+
+    while True:
+        doc_num = input()
+        if doc_num == '0':
             break
 
         data = d[doc_num]

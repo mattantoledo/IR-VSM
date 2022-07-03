@@ -10,6 +10,48 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 
+# Get a string representing document/query
+# Tokenize the string using nltk, and convert to lowercase
+# Remove unwanted words (punctuation, numbers, stopwords) and do stemming using Porter Stemmer
+# TODO write in the documentation that we used stemming
+# Return the list of valid tokens
+def extract_tokens(data_str):
+    stemmer = PorterStemmer()
+
+    data = word_tokenize(data_str)
+
+    data = [word.lower() for word in data]
+
+    def my_filter(word):
+        return word.isalpha() and word not in stopwords.words('english')
+
+    data = [word for word in data if my_filter(word)]
+    data = [stemmer.stem(word) for word in data]
+
+    return data
+
+
+# Compute term frequencies for a list of tokens (document/query) saved in curr_tokens
+# Normalize by maximum count
+def compute_term_frequencies(data_str):
+
+    tokens = extract_tokens(data_str)
+    max_count = 1
+
+    tokens_tf = {}
+
+    for term in tokens:
+        if term in tokens_tf:
+            tokens_tf[term] += 1
+            if tokens_tf[term] > max_count:
+                max_count = tokens_tf[term]
+        else:
+            tokens_tf[term] = 1
+
+    tokens_tf = {term: tf / max_count for term, tf in tokens_tf.items()}
+    return tokens_tf
+
+
 class VSM:
 
     INDEX_PATH = 'vsm_inverted_index.json'
@@ -23,62 +65,17 @@ class VSM:
         self.inverted_index = {}
         self.document_vector_norms = {}
         self.document_lengths = {}
-        self.document_scores = {}
         self.document_number = 0
-        self.document_length_avg = 0
-        self.corpus_directory = ""
-        self.curr_tokens = []
-        self.curr_tokens_with_tf = {}
         self.top_docs = []
         self.limit = False
 
-    # Get a string representing document/query
-    # Tokenize the string using nltk, and convert to lowercase
-    # Remove unwanted words (punctuation, numbers, stopwords) and do stemming using Porter Stemmer
-    # TODO write in the documentation that we used stemming
-    # Return the list of valid tokens
-    def extract_tokens(self, data_str):
-        stemmer = PorterStemmer()
-
-        data = word_tokenize(data_str)
-
-        data = [word.lower() for word in data]
-
-        def my_filter(word):
-            return word.isalpha() and word not in stopwords.words('english')
-
-        data = [word for word in data if my_filter(word)]
-        data = [stemmer.stem(word) for word in data]
-
-        self.curr_tokens = data
-
-    # Compute term frequencies for a list of tokens (document/query) saved in curr_tokens
-    # Normalize by maximum count
-    def compute_term_frequencies(self):
-
-        self.curr_tokens_with_tf = {}
-
-        max_count = 1
-
-        for term in self.curr_tokens:
-            if term in self.curr_tokens_with_tf:
-                self.curr_tokens_with_tf[term] += 1
-                if self.curr_tokens_with_tf[term] > max_count:
-                    max_count = self.curr_tokens_with_tf[term]
-            else:
-                self.curr_tokens_with_tf[term] = 1
-
-        self.curr_tokens_with_tf = {term: tf / max_count for term, tf in self.curr_tokens_with_tf.items()}
-        return
-
     def add_doc_data_to_index(self, data_str, doc_num):
 
-        self.extract_tokens(data_str)
-        self.compute_term_frequencies()
+        tokens_tf = compute_term_frequencies(data_str)
 
-        self.document_lengths[doc_num] = len(self.curr_tokens)
+        self.document_lengths[doc_num] = len(tokens_tf)
 
-        for token, tf in self.curr_tokens_with_tf.items():
+        for token, tf in tokens_tf.items():
 
             if token not in self.inverted_index:
                 self.inverted_index[token] = {'df': 0, 'doc_tf': {}}
@@ -90,19 +87,19 @@ class VSM:
 
     # Iterate on every document, pre-process and build inverted index
     # Return inverted_index and n = number of documents
-    def build_inverted_index(self):
+    def build_inverted_index(self, corpus_directory):
 
         self.document_number = 0
         self.inverted_index = {}
 
         # Traverse on XML files in the given directory
-        for filename in os.listdir(self.corpus_directory):
+        for filename in os.listdir(corpus_directory):
 
             if not filename.endswith(".xml"):
                 continue
 
             # Use the file path to parse the XML file to etree element
-            file_path = os.path.join(self.corpus_directory, filename)
+            file_path = os.path.join(corpus_directory, filename)
             tree = etree.parse(file_path)
             root = tree.getroot()
 
@@ -175,80 +172,71 @@ class VSM:
         self.document_vector_norms = saved_dict['norms']
         self.document_lengths = saved_dict['lengths']
         self.document_number = len(self.document_lengths)
-        self.document_length_avg = sum(self.document_lengths.values()) / self.document_number
 
         return
 
-    def retrieve_top_docs_tf_idf(self):
+    def retrieve_top_docs(self, ranking, question):
+
+        tokens_tf_query = compute_term_frequencies(question)
 
         query_length = 0
-        self.document_scores = {}
+        document_scores = {}
         self.top_docs = []
 
-        for token, tf_query in self.curr_tokens_with_tf.items():
+        n = self.document_number
+        avgdl = sum(self.document_lengths.values()) / self.document_number
+
+        for token, tf_query in tokens_tf_query.items():
 
             # TODO handle this case - is continue- okay?
             if token not in self.inverted_index:
                 print("the word " + token + " from the query is not in the corpus")
                 continue
-            i = self.inverted_index[token]['idf']
-            query_length += (tf_query * i) ** 2
+
+            idf = self.inverted_index[token]['idf']
+            query_length += (tf_query * idf) ** 2
             k = tf_query
-            w = k * i
-
-            doc_tf = self.inverted_index[token]['doc_tf']
-
-            for doc_num, tf_doc in doc_tf.items():
-                if doc_num not in self.document_scores:
-                    self.document_scores[doc_num] = 0
-                self.document_scores[doc_num] += w * i * tf_doc
-
-        l = math.sqrt(query_length)
-
-        for doc_num in self.document_scores.keys():
-            s = self.document_scores[doc_num]
-            y = self.document_vector_norms[doc_num]
-            self.document_scores[doc_num] = s / (l * y)
-
-        self.top_docs = sorted(self.document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
-        return
-
-    def modify_tf_bm25(self, tf, doc_num):
-
-        k = VSM.BM_25_K
-        b = VSM.BM_25_b
-        d = self.document_lengths[doc_num]
-        avgdl = self.document_length_avg
-
-        x = tf * (k + 1)
-        y = tf + k * (1 - b + b * (d / avgdl))
-
-        return x/y
-
-    def retrieve_top_docs_bm25(self):
-
-        n = self.document_number
-        self.document_scores = {}
-        self.top_docs = []
-
-        for token in self.curr_tokens_with_tf.keys():
-
-            if token not in self.inverted_index:
-                print("the word " + token + " from the query is not in the corpus")
-                continue
+            w = k * idf
 
             n_qi = self.inverted_index[token]['df']
-            idf = math.log((n - n_qi + 0.5) / (n_qi + 0.5) + 1)
+            idf_bm25 = math.log((n - n_qi + 0.5) / (n_qi + 0.5) + 1)
 
             doc_tf = self.inverted_index[token]['doc_tf']
 
             for doc_num, tf in doc_tf.items():
-                tf = self.modify_tf_bm25(tf, doc_num)
-                if doc_num not in self.document_scores:
-                    self.document_scores[doc_num] = 0
-                self.document_scores[doc_num] += tf * idf
+                if doc_num not in document_scores:
+                    document_scores[doc_num] = 0
 
-        self.top_docs = sorted(self.document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
+                score = 0
+                if ranking == 'tfidf':
+                    score = w * idf * tf
+
+                elif ranking == 'bm25':
+                    tf_bm25 = self.modify_tf_bm25(tf, doc_num, avgdl)
+                    score = tf_bm25 * idf_bm25
+
+                document_scores[doc_num] += score
+
+        if ranking == 'tfidf':
+            l = math.sqrt(query_length)
+
+            for doc_num in document_scores.keys():
+                s = document_scores[doc_num]
+                y = self.document_vector_norms[doc_num]
+                document_scores[doc_num] = s / (l * y)
+
+        self.top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
+        return
+
+    def modify_tf_bm25(self, tf, doc_num, avgdl):
+
+        k = VSM.BM_25_K
+        b = VSM.BM_25_b
+        d = self.document_lengths[doc_num]
+        x = tf * (k + 1)
+        y = tf + k * (1 - b + b * (d / avgdl))
+
+        return x/y
 
     def save_top_docs(self):
 
@@ -267,9 +255,8 @@ def main(argv):
 
     if argv[1] == 'create_index':
 
-        vsm_model.corpus_directory = argv[2]
-
-        vsm_model.build_inverted_index()
+        corpus_directory = argv[2]
+        vsm_model.build_inverted_index(corpus_directory)
         vsm_model.add_idf_scores_to_index()
         vsm_model.compute_document_vector_norms()
         vsm_model.save_index_and_lengths()
@@ -287,17 +274,12 @@ def main(argv):
         index_path = argv[3]
         question = argv[4]
 
-        vsm_model.load_index_and_lengths(index_path)
-        vsm_model.extract_tokens(question)
-        vsm_model.compute_term_frequencies()
-
-        if ranking == 'tfidf':
-            vsm_model.retrieve_top_docs_tf_idf()
-        elif ranking == 'bm25':
-            vsm_model.retrieve_top_docs_bm25()
-        else:
+        if ranking != 'tfidf' and ranking != 'bm25':
             print("Invalid ranking")
             return
+
+        vsm_model.load_index_and_lengths(index_path)
+        vsm_model.retrieve_top_docs(ranking, question)
 
         print(question)
         for result in vsm_model.top_docs:
