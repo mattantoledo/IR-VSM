@@ -47,7 +47,11 @@ class Evaluator:
 
             vsm_model.extract_tokens(question)
             vsm_model.compute_term_frequencies()
-            vsm_model.retrieve_top_docs()
+
+            if ranking == 'tfidf':
+                vsm_model.retrieve_top_docs_tf_idf()
+            elif ranking == 'bm25':
+                vsm_model.retrieve_top_docs_bm25()
 
             my_top_docs = [t[0] for t in vsm_model.top_docs]
             self.my_query_results[query_num] = {'question': question, 'top_docs': my_top_docs}
@@ -82,7 +86,7 @@ def main(argv):
     e = Evaluator()
 
     e.build_true_query_results()
-    e.build_my_query_results('tfidf')
+    e.build_my_query_results('bm25')
 
     e.save_true_query_results()
     e.save_my_query_results()

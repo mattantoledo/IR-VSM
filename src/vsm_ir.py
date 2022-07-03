@@ -16,17 +16,20 @@ class VSM:
     TOP_DOCS_PATH = 'ranked_query_docs.txt'
     MAX_DOCUMENTS = 100
     RESULTS_THRESHOLD = 10
+    BM_25_K = 1.2
+    BM_25_b = 0.75
 
     def __init__(self):
         self.inverted_index = {}
+        self.document_vector_norms = {}
         self.document_lengths = {}
         self.document_scores = {}
         self.document_number = 0
+        self.document_length_avg = 0
         self.corpus_directory = ""
         self.curr_tokens = []
         self.curr_tokens_with_tf = {}
         self.top_docs = []
-        self.ranking = ""
         self.limit = False
 
     # Get a string representing document/query
@@ -42,7 +45,7 @@ class VSM:
         data = [word.lower() for word in data]
 
         def my_filter(word):
-            return word.isalpha() and len(word) > 1 and word not in stopwords.words('english')
+            return word.isalpha() and word not in stopwords.words('english')
 
         data = [word for word in data if my_filter(word)]
         data = [stemmer.stem(word) for word in data]
@@ -52,6 +55,8 @@ class VSM:
     # Compute term frequencies for a list of tokens (document/query) saved in curr_tokens
     # Normalize by maximum count
     def compute_term_frequencies(self):
+
+        self.curr_tokens_with_tf = {}
 
         max_count = 1
 
@@ -68,25 +73,27 @@ class VSM:
 
     def add_doc_data_to_index(self, data_str, doc_num):
 
-        self.curr_tokens = []
-        self.curr_tokens_with_tf = {}
-
         self.extract_tokens(data_str)
         self.compute_term_frequencies()
 
-        for token, count in self.curr_tokens_with_tf.items():
+        self.document_lengths[doc_num] = len(self.curr_tokens)
+
+        for token, tf in self.curr_tokens_with_tf.items():
 
             if token not in self.inverted_index:
                 self.inverted_index[token] = {'df': 0, 'doc_tf': {}}
 
             self.inverted_index[token]['df'] += 1
-            self.inverted_index[token]['doc_tf'][doc_num] = count
+            self.inverted_index[token]['doc_tf'][doc_num] = tf
 
         return
 
     # Iterate on every document, pre-process and build inverted index
     # Return inverted_index and n = number of documents
     def build_inverted_index(self):
+
+        self.document_number = 0
+        self.inverted_index = {}
 
         # Traverse on XML files in the given directory
         for filename in os.listdir(self.corpus_directory):
@@ -123,6 +130,7 @@ class VSM:
     def add_idf_scores_to_index(self):
 
         n = self.document_number
+
         for token in self.inverted_index.keys():
             n_t = self.inverted_index[token]['df']
             idf = math.log(n / n_t, 2)
@@ -130,45 +138,52 @@ class VSM:
 
         return
 
-    # Compute document length for every document and return dictionary of all lengths
-    def compute_document_lengths(self):
+    # Compute document vector norm for every document
+    def compute_document_vector_norms(self):
+
+        self.document_vector_norms = {}
 
         # Compute document vector length (sum of squares of tf-idf)
         for token in self.inverted_index.keys():
             idf = self.inverted_index[token]['idf']
             for doc_num, tf in self.inverted_index[token]['doc_tf'].items():
 
-                if doc_num not in self.document_lengths:
-                    self.document_lengths[doc_num] = 0
-                self.document_lengths[doc_num] += (tf * idf) ** 2
+                if doc_num not in self.document_vector_norms:
+                    self.document_vector_norms[doc_num] = 0
+                self.document_vector_norms[doc_num] += (tf * idf) ** 2
 
         # Square root to get the norm of the document
-        self.document_lengths = {doc_num: math.sqrt(length) for doc_num, length in self.document_lengths.items()}
+        self.document_vector_norms = {doc_num: math.sqrt(length) for doc_num, length in self.document_vector_norms.items()}
 
         return
 
     def save_index_and_lengths(self):
 
-        index_and_lengths = {'index': self.inverted_index, 'lengths': self.document_lengths}
+        saved_dict = {'index': self.inverted_index, 'norms': self.document_vector_norms, 'lengths': self.document_lengths}
 
         with open(VSM.INDEX_PATH, 'w') as outfile:
-            json.dump(index_and_lengths, outfile)
+            json.dump(saved_dict, outfile)
 
         return
 
     def load_index_and_lengths(self, index_path):
 
         with open(index_path, 'r') as index_file:
-            index_and_lengths = json.load(index_file)
+            saved_dict = json.load(index_file)
 
-        self.inverted_index = index_and_lengths['index']
-        self.document_lengths = index_and_lengths['lengths']
+        self.inverted_index = saved_dict['index']
+        self.document_vector_norms = saved_dict['norms']
+        self.document_lengths = saved_dict['lengths']
+        self.document_number = len(self.document_lengths)
+        self.document_length_avg = sum(self.document_lengths.values()) / self.document_number
 
         return
 
-    def retrieve_top_docs(self):
+    def retrieve_top_docs_tf_idf(self):
 
         query_length = 0
+        self.document_scores = {}
+        self.top_docs = []
 
         for token, tf_query in self.curr_tokens_with_tf.items():
 
@@ -192,11 +207,48 @@ class VSM:
 
         for doc_num in self.document_scores.keys():
             s = self.document_scores[doc_num]
-            y = self.document_lengths[doc_num]
+            y = self.document_vector_norms[doc_num]
             self.document_scores[doc_num] = s / (l * y)
 
         self.top_docs = sorted(self.document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
         return
+
+    def modify_tf_bm25(self, tf, doc_num):
+
+        k = VSM.BM_25_K
+        b = VSM.BM_25_b
+        d = self.document_lengths[doc_num]
+        avgdl = self.document_length_avg
+
+        x = tf * (k + 1)
+        y = tf + k * (1 - b + b * (d / avgdl))
+
+        return x/y
+
+    def retrieve_top_docs_bm25(self):
+
+        n = self.document_number
+        self.document_scores = {}
+        self.top_docs = []
+
+        for token in self.curr_tokens_with_tf.keys():
+
+            if token not in self.inverted_index:
+                print("the word " + token + " from the query is not in the corpus")
+                continue
+
+            n_qi = self.inverted_index[token]['df']
+            idf = math.log((n - n_qi + 0.5) / (n_qi + 0.5) + 1)
+
+            doc_tf = self.inverted_index[token]['doc_tf']
+
+            for doc_num, tf in doc_tf.items():
+                tf = self.modify_tf_bm25(tf, doc_num)
+                if doc_num not in self.document_scores:
+                    self.document_scores[doc_num] = 0
+                self.document_scores[doc_num] += tf * idf
+
+        self.top_docs = sorted(self.document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
 
     def save_top_docs(self):
 
@@ -219,7 +271,7 @@ def main(argv):
 
         vsm_model.build_inverted_index()
         vsm_model.add_idf_scores_to_index()
-        vsm_model.compute_document_lengths()
+        vsm_model.compute_document_vector_norms()
         vsm_model.save_index_and_lengths()
 
         print('Finished building index')
@@ -235,12 +287,22 @@ def main(argv):
         index_path = argv[3]
         question = argv[4]
 
-        vsm_model.ranking = ranking
-
         vsm_model.load_index_and_lengths(index_path)
         vsm_model.extract_tokens(question)
         vsm_model.compute_term_frequencies()
-        vsm_model.retrieve_top_docs()
+
+        if ranking == 'tfidf':
+            vsm_model.retrieve_top_docs_tf_idf()
+        elif ranking == 'bm25':
+            vsm_model.retrieve_top_docs_bm25()
+        else:
+            print("Invalid ranking")
+            return
+
+        print(question)
+        for result in vsm_model.top_docs:
+            print(result[0])
+
         vsm_model.save_top_docs()
 
         print('query done')
