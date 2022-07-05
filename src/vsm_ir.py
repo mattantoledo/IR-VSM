@@ -74,7 +74,7 @@ class VSM:
 
     INDEX_PATH = 'vsm_inverted_index.json'
     TOP_DOCS_PATH = 'ranked_query_docs.txt'
-    RESULTS_THRESHOLD = 10
+    RESULTS_THRESHOLD = 12
     BM_25_K = 1.2
     BM_25_b = 0.75
 
@@ -201,7 +201,6 @@ class VSM:
 
             # TODO handle this case - is continue- okay?
             if token not in self.inverted_index:
-                print("the word " + token + " from the query is not in the corpus")
                 continue
 
             idf = self.inverted_index[token]['idf']

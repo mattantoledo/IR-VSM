@@ -1,88 +1,98 @@
 from vsm_ir import *
 
+QUERY_DATA_PATH = './../data/cfc-xml/cfquery.xml'
 
-class Evaluator:
 
-    QUERY_DOCS_SCORE_PATH = './../data/cfc-xml/cfquery.xml'
-    TRUE_DB_PATH = './../data/query_results/true_query_results.json'
-    MY_DB_PATH = './../data/query_results/my_query_results.json'
+# Given a etree element representing a query, return a dictionary {doc_num:score}
+def compute_true_scores(query):
+    scores = {}
 
-    def __init__(self):
-        self.true_query_results = {}
-        self.my_query_results = {}
+    matches = query.xpath("./Records/Item")
 
-    def build_true_query_results(self):
-        tree = etree.parse(Evaluator.QUERY_DOCS_SCORE_PATH)
-        root = tree.getroot()
-        queries = root.xpath("./QUERY")
+    for match in matches:
+        doc_num = match.text
+        score = match.attrib['score']
+        scores[doc_num] = sum([int(v) for v in score]) / len(score)
 
-        for query in queries:
-            query_num = query.xpath("./QueryNumber/text()")[0]
-            question = query.xpath("./QueryText/text()")[0]
-            matches = query.xpath("./Records/Item")
+    return scores
 
-            docs_score = {}
 
-            for match in matches:
-                doc_num = match.text
-                score = match.attrib['score']
-                docs_score[doc_num] = sum([int(v) for v in score])
+# Given a list of scores (relevancy by judges), return the dcg score
+def compute_dcg(relevance):
 
-            top_docs = sorted(docs_score.items(), key=lambda t: t[1], reverse=True)
-            top_docs = [x[0] for x in top_docs]
+    dcg_score = relevance[0]
 
-            self.true_query_results[query_num] = {'question': question, 'top_docs': top_docs}
+    for i in range(1, len(relevance)):
+        dcg_score += relevance[i] / math.log2(i+1)
+    return dcg_score
 
-        return
 
-    def build_my_query_results(self, ranking):
+# Compare results of all queries, compute evaluation estimators
+def test(ranking):
 
-        vsm_model = VSM()
+    vsm_model = VSM()
+    vsm_model.load_index_and_lengths(VSM.INDEX_PATH)
 
-        vsm_model.load_index_and_lengths(VSM.INDEX_PATH)
+    tree = etree.parse(QUERY_DATA_PATH)
+    root = tree.getroot()
+    queries = root.xpath("./QUERY")
 
-        for query_num, d in self.true_query_results.items():
-            question = d['question']
-            top_docs = vsm_model.retrieve_top_docs(ranking, question)
-            my_top_docs = [t[0] for t in top_docs]
-            self.my_query_results[query_num] = {'question': question, 'top_docs': my_top_docs}
+    i = 0
+    s = 0
+    t = 0
+    w = 0
+    z = 0
 
-        return
+    for query in queries:
 
-    def save_my_query_results(self):
+        i += 1
+        true_scores = compute_true_scores(query)
 
-        with open(Evaluator.MY_DB_PATH, 'w') as outfile:
-            json.dump(self.my_query_results, outfile)
-        return
+        question = query.xpath("./QueryText/text()")[0]
+        top_docs = vsm_model.retrieve_top_docs(ranking, question)
 
-    def load_my_query_results(self):
-        with open(Evaluator.MY_DB_PATH, 'r') as outfile:
-            self.my_query_results = json.load(outfile)
-        return
+        relevance = []
+        inter = 0
 
-    def save_true_query_results(self):
+        for (doc_num, score) in top_docs:
+            rel = 0
+            if doc_num in true_scores:
+                inter += 1
+                rel += true_scores[doc_num]
 
-        with open(Evaluator.TRUE_DB_PATH, 'w') as outfile:
-            json.dump(self.true_query_results, outfile)
-        return
+            relevance.append(rel)
 
-    def load_true_query_results(self):
-        with open(Evaluator.TRUE_DB_PATH, 'r') as outfile:
-            self.true_query_results = json.load(outfile)
-        return
+        precision = inter / len(top_docs)
+        recall = inter / len(true_scores)
+
+        dcg_score = compute_dcg(relevance)
+        idcg_score = compute_dcg(sorted(relevance, reverse=True))
+
+        ndcg_score = dcg_score / idcg_score if idcg_score > 0 else 0
+
+        f = (2 * precision * recall) / (precision + recall) if (precision+recall) > 0 else 0
+
+        s += ndcg_score
+        t += precision
+        w += recall
+        z += f
+
+    print(ranking)
+    res = "{:.3f}".format(s / i)
+    print("Average NDCG@10 = " + res)
+    res = "{:.3f}".format(t / i)
+    print("Average Precision = " + res)
+    res = "{:.3f}".format(w / i)
+    print("Average Recall = " + res)
+    res = "{:.3f}".format(z / i)
+    print("Average F = " + res)
+    return
 
 
 def main(argv):
 
-    e = Evaluator()
-
-    e.build_true_query_results()
-    e.build_my_query_results('bm25')
-
-    e.save_true_query_results()
-    e.save_my_query_results()
-
-    return
+    test('tfidf')
+    test('bm25')
 
 
 if __name__ == "__main__":

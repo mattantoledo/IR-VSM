@@ -1,15 +1,12 @@
-import json
 import sys
 import os
 from lxml import etree
 
 XML_PATH = "C:\\Users\\MattanToledo\\PycharmProjects\\IR-VSM\\data\\cfc-xml"
-DOC_DATA_PATH = "C:\\Users\\MattanToledo\\PycharmProjects\\IR-VSM\\data\\doc_data\\doc_data.json"
 
 
-def build_doc_data():
-
-    d = {}
+# Given a doc_num returns the title and the abstract of the document
+def retrieve_doc_data(doc_num):
 
     # Traverse on XML files in the given directory
     for filename in os.listdir(XML_PATH):
@@ -22,56 +19,34 @@ def build_doc_data():
         tree = etree.parse(file_path)
         root = tree.getroot()
 
-        # Use XPATH to build a list of all records in the XML file
+        # Use XPATH to find the matching document record
         doc_list = root.xpath("/root/RECORD")
 
-        # Compute record_num, list of tokens (after pre-processing) with frequency count
         for doc in doc_list:
+            curr_doc_num = doc.xpath("./RECORDNUM/text()")[0]
+            if int(curr_doc_num) == int(doc_num):
+                data_list = doc.xpath("./TITLE/text()") + doc.xpath("./EXTRACT/text()") + doc.xpath("./ABSTRACT/text()")
+                data_str = "\n\n".join(data_list)
+                return data_str
 
-            doc_num = int(doc.xpath("./RECORDNUM/text()")[0])
-
-            # Use XPATH to extract all words from TITLE, ABSTRACT, EXTRACT
-            data_list = doc.xpath("./TITLE/text()") + doc.xpath("./EXTRACT/text()") + doc.xpath("./ABSTRACT/text()")
-            data_str = "\n\n".join(data_list)
-
-            d[doc_num] = data_str
-
-    return d
+    return None
 
 
-def save_docs_data(d):
-
-    with open(DOC_DATA_PATH, 'w') as outfile:
-        json.dump(d, outfile)
-    return
-
-
-def load_docs_data():
-
-    with open(DOC_DATA_PATH, 'r') as outfile:
-        d = json.load(outfile)
-    return d
-
-
-def main(argv):
-
-    # This is done one time only
-    # d = build_doc_data()
-    # save_docs_data(d)
-
-    d = load_docs_data()
+# loop to get user input of doc_num and prints the data of the document
+# stop when input is 0
+def main():
 
     while True:
         doc_num = input()
         if doc_num == '0':
             break
 
-        data = d[doc_num]
-        print(data)
+        data = retrieve_doc_data(doc_num)
+        print('\n' + data + '\n')
 
     print("done")
     return
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
