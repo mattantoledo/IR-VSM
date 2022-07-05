@@ -20,6 +20,9 @@ def compute_true_scores(query):
 # Given a list of scores (relevancy by judges), return the dcg score
 def compute_dcg(relevance):
 
+
+    if not relevance:
+        return 0
     dcg_score = relevance[0]
 
     for i in range(1, len(relevance)):
@@ -62,7 +65,7 @@ def test(ranking):
 
             relevance.append(rel)
 
-        precision = inter / len(top_docs)
+        precision = inter / len(top_docs) if top_docs else 0
         recall = inter / len(true_scores)
 
         dcg_score = compute_dcg(relevance)

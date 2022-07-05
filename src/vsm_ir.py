@@ -74,7 +74,7 @@ class VSM:
 
     INDEX_PATH = 'vsm_inverted_index.json'
     TOP_DOCS_PATH = 'ranked_query_docs.txt'
-    RESULTS_THRESHOLD = 12
+    RESULTS_THRESHOLD = 10
     BM_25_K = 1.2
     BM_25_b = 0.75
 
@@ -236,8 +236,21 @@ class VSM:
                 y = self.document_vector_norms[doc_num]
                 document_scores[doc_num] = s / (l * y)
 
+        # Always return 10 top documents
         top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
         return top_docs
+
+        # TODO - this is a dynamic score threshold - do we need this?
+        #if ranking == 'tfidf':
+        #    th = 0.1
+        #    top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
+        #    return list(filter(lambda x: x[1] > th, top_docs))
+        #else:
+        #    th = 3
+        #    top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
+        #    return list(filter(lambda x: x[1] > th, top_docs))
+
+        # return top_docs
 
 
 def main(argv):
