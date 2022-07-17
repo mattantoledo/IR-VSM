@@ -1,0 +1,12 @@
+tfidf
+running on 99 queries
+Average NDCG@10 = 0.772
+Average Precision = 0.494
+Average Recall = 0.180
+Average F = 0.229
+bm25
+running on 99 queries
+Average NDCG@10 = 0.715
+Average Precision = 0.404
+Average Recall = 0.146
+Average F = 0.186
