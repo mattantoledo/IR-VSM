@@ -105,7 +105,7 @@ def test(ranking):
 
 def main(argv):
 
-    #test('tfidf')
+    test('tfidf')
     test('bm25')
 
 
