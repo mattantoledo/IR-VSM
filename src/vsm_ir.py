@@ -289,10 +289,6 @@ def main(argv):
         top_docs = vsm_model.retrieve_top_docs(ranking, question)
         save_top_docs(top_docs)
 
-        print(question)
-        for result in top_docs:
-            print(result[0])
-
         print('query done')
         return
 

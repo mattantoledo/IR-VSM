@@ -4,7 +4,8 @@ QUERY_DATA_PATH = './../data/cfc-xml/cfquery.xml'
 
 
 # Given a etree element representing a query, return a dictionary {doc_num:score}
-def compute_true_scores(query):
+def compute_relevant_documents(query):
+    
     scores = {}
 
     matches = query.xpath("./Records/Item")
@@ -20,7 +21,6 @@ def compute_true_scores(query):
 # Given a list of scores (relevancy by judges), return the dcg score
 def compute_dcg(relevance):
 
-
     if not relevance:
         return 0
     dcg_score = relevance[0]
@@ -28,6 +28,18 @@ def compute_dcg(relevance):
     for i in range(1, len(relevance)):
         dcg_score += relevance[i] / math.log2(i+1)
     return dcg_score
+
+
+# Given a dictionary of relevant documents, compute the idcg score
+def compute_idcg(relevant_documents):
+    
+    sorted_relevant_documents = sorted(relevant_documents, key=lambda x: relevant_documents[x], reverse=True)
+
+    relevance = []
+    for i in range(min(VSM.RESULTS_THRESHOLD, len(sorted_relevant_documents))):
+        relevance.append(relevant_documents[sorted_relevant_documents[i]])
+    
+    return compute_dcg(relevance)
 
 
 # Compare results of all queries, compute evaluation estimators
@@ -40,54 +52,53 @@ def test(ranking):
     root = tree.getroot()
     queries = root.xpath("./QUERY")
 
-    i = 0
-    s = 0
-    t = 0
-    w = 0
-    z = 0
+    count = 0
+    avg_ndcg = 0
+    avg_precision = 0
+    avg_recall = 0
+    avg_f = 0
 
     for query in queries:
 
-        i += 1
-        true_scores = compute_true_scores(query)
+        count += 1
+        relevant_documents = compute_relevant_documents(query)
 
         question = query.xpath("./QueryText/text()")[0]
-        top_docs = vsm_model.retrieve_top_docs(ranking, question)
+        retrieved_documents = vsm_model.retrieve_top_docs(ranking, question)
 
         relevance = []
-        inter = 0
+        inter_size = 0
 
-        for (doc_num, score) in top_docs:
+        for (doc_num, score) in retrieved_documents:
             rel = 0
-            if doc_num in true_scores:
-                inter += 1
-                rel += true_scores[doc_num]
+            if doc_num in relevant_documents:
+                inter_size += 1
+                rel += relevant_documents[doc_num]
 
             relevance.append(rel)
 
-        precision = inter / len(top_docs) if top_docs else 0
-        recall = inter / len(true_scores)
+        precision = inter_size / len(retrieved_documents) if retrieved_documents else 0
+        recall = inter_size / len(relevant_documents)
 
         dcg_score = compute_dcg(relevance)
-        idcg_score = compute_dcg(sorted(relevance, reverse=True))
-
-        ndcg_score = dcg_score / idcg_score if idcg_score > 0 else 0
+        idcg_score = compute_idcg(relevant_documents)
+        ndcg_score = dcg_score / idcg_score
 
         f = (2 * precision * recall) / (precision + recall) if (precision+recall) > 0 else 0
 
-        s += ndcg_score
-        t += precision
-        w += recall
-        z += f
+        avg_ndcg += ndcg_score
+        avg_precision += precision
+        avg_recall += recall
+        avg_f += f
 
     print(ranking)
-    res = "{:.3f}".format(s / i)
+    res = "{:.3f}".format(avg_ndcg / count)
     print("Average NDCG@10 = " + res)
-    res = "{:.3f}".format(t / i)
+    res = "{:.3f}".format(avg_precision / count)
     print("Average Precision = " + res)
-    res = "{:.3f}".format(w / i)
+    res = "{:.3f}".format(avg_recall / count)
     print("Average Recall = " + res)
-    res = "{:.3f}".format(z / i)
+    res = "{:.3f}".format(avg_f / count)
     print("Average F = " + res)
     return
 
