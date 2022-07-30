@@ -199,7 +199,6 @@ class VSM:
 
         for token, tf_query in tokens_tf_query.items():
 
-            # TODO handle this case - is continue- okay?
             if token not in self.inverted_index:
                 continue
 
@@ -236,21 +235,8 @@ class VSM:
                 y = self.document_vector_norms[doc_num]
                 document_scores[doc_num] = s / (l * y)
 
-        # Always return 10 top documents
         top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
         return top_docs
-
-        # TODO - this is a dynamic score threshold - do we need this?
-        #if ranking == 'tfidf':
-        #    th = 0.1
-        #    top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
-        #    return list(filter(lambda x: x[1] > th, top_docs))
-        #else:
-        #    th = 3
-        #    top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
-        #    return list(filter(lambda x: x[1] > th, top_docs))
-
-        # return top_docs
 
 
 def main(argv):
