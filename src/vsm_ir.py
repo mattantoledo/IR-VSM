@@ -74,6 +74,7 @@ class VSM:
 
     INDEX_PATH = 'vsm_inverted_index.json'
     TOP_DOCS_PATH = 'ranked_query_docs.txt'
+    RESULTS_THRESHOLD = 7
     BM_25_K = 1.2
     BM_25_b = 0.75
 
@@ -82,7 +83,6 @@ class VSM:
         self.document_vector_norms = {}
         self.document_lengths = {}
         self.document_number = 0
-        self.threshold = 0
 
     def add_doc_data_to_index(self, data_str, doc_num):
 
@@ -235,7 +235,7 @@ class VSM:
                 y = self.document_vector_norms[doc_num]
                 document_scores[doc_num] = s / (l * y)
 
-        top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:self.threshold]
+        top_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)[:VSM.RESULTS_THRESHOLD]
         return top_docs
 
 
@@ -270,11 +270,6 @@ def main(argv):
         if ranking != 'tfidf' and ranking != 'bm25':
             print("Invalid ranking")
             return
-
-        if ranking == 'tfidf':
-            vsm_model.threshold = 10
-        else:
-            vsm_model.threshold = 5
 
         vsm_model.load_index_and_lengths(index_path)
         top_docs = vsm_model.retrieve_top_docs(ranking, question)

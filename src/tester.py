@@ -31,7 +31,7 @@ def compute_dcg(relevance):
 
 
 # Given a dictionary of relevant documents, compute the idcg score
-def compute_idcg(relevant_documents, threshold=10):
+def compute_idcg(relevant_documents, threshold):
     
     sorted_relevant_documents = sorted(relevant_documents, key=lambda x: relevant_documents[x], reverse=True)
 
@@ -43,11 +43,10 @@ def compute_idcg(relevant_documents, threshold=10):
 
 
 # Compare results of all queries, compute evaluation estimators
-def test(ranking, th):
+def test(ranking):
 
     vsm_model = VSM()
     vsm_model.load_index_and_lengths(VSM.INDEX_PATH)
-    vsm_model.threshold = th
 
     tree = etree.parse(QUERY_DATA_PATH)
     root = tree.getroot()
@@ -82,7 +81,7 @@ def test(ranking, th):
         recall = inter_size / len(relevant_documents)
 
         dcg_score = compute_dcg(relevance)
-        idcg_score = compute_idcg(relevant_documents, threshold=vsm_model.threshold)
+        idcg_score = compute_idcg(relevant_documents, threshold=VSM.RESULTS_THRESHOLD)
         ndcg_score = dcg_score / idcg_score
 
         f = (2 * precision * recall) / (precision + recall) if (precision+recall) > 0 else 0
@@ -94,7 +93,7 @@ def test(ranking, th):
 
     print(ranking)
     res = "{:.3f}".format(avg_ndcg / count)
-    print("Average NDCG@" + str(vsm_model.threshold) + " = " + res)
+    print("Average NDCG@" + str(VSM.RESULTS_THRESHOLD) + " = " + res)
     res = "{:.3f}".format(avg_precision / count)
     print("Average Precision = " + res)
     res = "{:.3f}".format(avg_recall / count)
@@ -106,10 +105,8 @@ def test(ranking, th):
 
 def main(argv):
 
-    for i in range(2, 12):
-        test('tfidf', i)
-    for i in range(2, 12):
-        test('bm25', i)
+    #test('tfidf')
+    test('bm25')
 
 
 if __name__ == "__main__":
