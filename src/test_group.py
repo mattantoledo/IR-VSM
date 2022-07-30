@@ -25,8 +25,6 @@ def gain(gain_str: str) -> int:
 
 def idcg10(relevant_documents: dict) -> float:
     sorted_relevant_documents = sorted(relevant_documents, key=lambda x: relevant_documents[x], reverse=True)
-
-    print(sorted_relevant_documents)
     n = len(sorted_relevant_documents)
     idcg = 0
     if n > 0:
