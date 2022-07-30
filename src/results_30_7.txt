@@ -1,0 +1,100 @@
+tfidf
+Average NDCG@2 = 0.538
+Average Precision = 0.692
+Average Recall = 0.067
+Average F = 0.113
+tfidf
+Average NDCG@3 = 0.524
+Average Precision = 0.657
+Average Recall = 0.089
+Average F = 0.143
+tfidf
+Average NDCG@4 = 0.507
+Average Precision = 0.609
+Average Recall = 0.105
+Average F = 0.161
+tfidf
+Average NDCG@5 = 0.495
+Average Precision = 0.582
+Average Recall = 0.120
+Average F = 0.177
+tfidf
+Average NDCG@6 = 0.490
+Average Precision = 0.559
+Average Recall = 0.134
+Average F = 0.191
+tfidf
+Average NDCG@7 = 0.488
+Average Precision = 0.541
+Average Recall = 0.145
+Average F = 0.201
+tfidf
+Average NDCG@8 = 0.484
+Average Precision = 0.520
+Average Recall = 0.157
+Average F = 0.211
+tfidf
+Average NDCG@9 = 0.481
+Average Precision = 0.510
+Average Recall = 0.169
+Average F = 0.221
+tfidf
+Average NDCG@10 = 0.478
+Average Precision = 0.494
+Average Recall = 0.180
+Average F = 0.229
+tfidf
+Average NDCG@11 = 0.475
+Average Precision = 0.474
+Average Recall = 0.185
+Average F = 0.230
+bm25
+Average NDCG@2 = 0.441
+Average Precision = 0.571
+Average Recall = 0.057
+Average F = 0.095
+bm25
+Average NDCG@3 = 0.422
+Average Precision = 0.535
+Average Recall = 0.076
+Average F = 0.120
+bm25
+Average NDCG@4 = 0.423
+Average Precision = 0.510
+Average Recall = 0.089
+Average F = 0.134
+bm25
+Average NDCG@5 = 0.414
+Average Precision = 0.485
+Average Recall = 0.102
+Average F = 0.149
+bm25
+Average NDCG@6 = 0.413
+Average Precision = 0.468
+Average Recall = 0.113
+Average F = 0.160
+bm25
+Average NDCG@7 = 0.406
+Average Precision = 0.450
+Average Recall = 0.122
+Average F = 0.168
+bm25
+Average NDCG@8 = 0.400
+Average Precision = 0.428
+Average Recall = 0.129
+Average F = 0.172
+bm25
+Average NDCG@9 = 0.397
+Average Precision = 0.411
+Average Recall = 0.136
+Average F = 0.176
+bm25
+Average NDCG@10 = 0.398
+Average Precision = 0.404
+Average Recall = 0.146
+Average F = 0.186
+bm25
+Average NDCG@11 = 0.397
+Average Precision = 0.388
+Average Recall = 0.153
+Average F = 0.189
