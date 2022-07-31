@@ -4,7 +4,6 @@ import os
 import math
 from lxml import etree
 
-# TODO document nltk.download('popular') command in python console
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
@@ -13,7 +12,6 @@ from nltk.stem import PorterStemmer
 # Get a string representing document/query
 # Tokenize the string using nltk, and convert to lowercase
 # Remove unwanted words (punctuation, numbers, stopwords) and do stemming using Porter Stemmer
-# TODO write in the documentation that we used stemming
 # Return the list of valid tokens
 def extract_tokens(data_str):
     stemmer = PorterStemmer()
@@ -76,7 +74,7 @@ class VSM:
     TOP_DOCS_PATH = 'ranked_query_docs.txt'
     RESULTS_THRESHOLD = 7
     BM_25_K = 1.2
-    BM_25_b = 0.75
+    BM_25_b = 0
 
     def __init__(self):
         self.inverted_index = {}
