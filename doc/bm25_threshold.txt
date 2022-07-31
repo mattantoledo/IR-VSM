@@ -1,0 +1,32 @@
+bm25
+
+Threshold = 2
+Average NDCG@2 = 0.441
+Average Precision = 0.571
+Average Recall = 0.057
+Average F = 0.095
+
+Threshold = 4
+Average NDCG@4 = 0.423
+Average Precision = 0.510
+Average Recall = 0.089
+Average F = 0.134
+
+Threshold = 6
+Average NDCG@6 = 0.413
+Average Precision = 0.468
+Average Recall = 0.113
+Average F = 0.160
+
+Threshold = 8
+Average NDCG@8 = 0.400
+Average Precision = 0.428
+Average Recall = 0.129
+Average F = 0.172
+
+Threshold = 10
+Average NDCG@10 = 0.398
+Average Precision = 0.404
+Average Recall = 0.146
+Average F = 0.186
+
