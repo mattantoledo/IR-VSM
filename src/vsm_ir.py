@@ -249,7 +249,7 @@ def main(argv):
 
     if argv[1] == 'create_index':
 
-        nltk.download('popular')
+        nltk.download('popular', quiet=True)
 
         corpus_directory = argv[2]
         vsm_model.build_inverted_index(corpus_directory)
