@@ -241,8 +241,6 @@ class VSM:
 
 def main(argv):
 
-    nltk.download('popular')
-
     if len(argv) < 3:
         print("Not enough arguments")
         return
@@ -250,6 +248,8 @@ def main(argv):
     vsm_model = VSM()
 
     if argv[1] == 'create_index':
+
+        nltk.download('popular')
 
         corpus_directory = argv[2]
         vsm_model.build_inverted_index(corpus_directory)
