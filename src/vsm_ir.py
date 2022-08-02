@@ -2,6 +2,8 @@ import json
 import sys
 import os
 import math
+
+import nltk
 from lxml import etree
 
 from nltk.tokenize import word_tokenize
@@ -238,6 +240,9 @@ class VSM:
 
 
 def main(argv):
+
+    nltk.download('popular')
+
     if len(argv) < 3:
         print("Not enough arguments")
         return
