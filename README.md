@@ -37,8 +37,3 @@ Replace `<ranking>` with either `tfidf` or `bm25` to specify the ranking method.
 Replace `<index_path>` with the path to the index file generated in step 2.  
 Replace `<query>` with the query string surrounded by quotes.  
 This will retrieve the top relevant documents based on the given query and ranking method.
-
-
-4. Evaluate the performance of the VSM. You can run the evaluation for both ranking methods using the following command:  
-`python main.py evaluate`  
-This will compute average NDCG@k, precision, recall, and F-score for a set of queries specified in the `QUERY_DATA_PATH` variable.
