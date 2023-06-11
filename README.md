@@ -30,20 +30,23 @@ To use the project, follow these steps:
 
 
 2. Build the inverted index by running the following command:
+
 ```python main.py create_index <corpus_directory>```
-Replace `<corpus_directory>` with the path to the directory containing the corpus of documents in XML format.
+
+> Replace `<corpus_directory>` with the path to the directory containing the corpus of documents in XML format.
 
 
 3. Perform a query using either the TF-IDF or BM25 ranking methods by running the following command:
+
 >`python main.py query <ranking> <index_path> "<query>"`
->
->Replace <ranking> with either "tfidf" or "bm25" to specify the ranking method.
+
+>>Replace <ranking> with either "tfidf" or "bm25" to specify the ranking method.
 > 
->Replace <index_path> with the path to the index file generated in step 2.
+>>Replace <index_path> with the path to the index file generated in step 2.
 > 
->Replace <query> with the query string surrounded by quotes.
+>>Replace <query> with the query string surrounded by quotes.
 > 
->This will retrieve the top relevant documents based on the given query and ranking method.
+>>This will retrieve the top relevant documents based on the given query and ranking method.
 
 
 4. Evaluate the performance of the VSM. You can run the evaluation for both ranking methods using the following command:
