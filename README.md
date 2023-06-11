@@ -7,10 +7,7 @@ This project is focused on implementing information retrieval techniques, includ
 
 The project is structured as follows:
 
-- `main.py`: This is the main Python file that handles the execution of the project.
-- `vsm.py`: This file contains the implementation of the Vector Space Model.
-- `utils.py`: This file contains utility functions for text preprocessing and computing term frequencies.
-- `corpus/`: This directory contains the XML files of the cystic fibrosis articles used in the project.
+- `src/vsm_ir.py`: This file contains the implementation of the Vector Space Model and the main file for execution.
 
 
 ## Requirements
@@ -25,31 +22,23 @@ The project has the following requirements:
 
 To use the project, follow these steps:
 
-1. Install the required dependencies by running the following command: 
+1. Install the required dependencies by running the following command:  
 `pip install -r requirements.txt`
 
 
-2. Build the inverted index by running the following command:
-
-```python main.py create_index <corpus_directory>```
-
-> Replace `<corpus_directory>` with the path to the directory containing the corpus of documents in XML format.
+2. Build the inverted index by running the following command:  
+```python main.py create_index <corpus_directory>```  
+Replace `<corpus_directory>` with the path to the directory containing the corpus of documents in XML format.
 
 
-3. Perform a query using either the TF-IDF or BM25 ranking methods by running the following command:
-
->`python main.py query <ranking> <index_path> "<query>"`
-
->>Replace <ranking> with either "tfidf" or "bm25" to specify the ranking method.
-> 
->>Replace <index_path> with the path to the index file generated in step 2.
-> 
->>Replace <query> with the query string surrounded by quotes.
-> 
->>This will retrieve the top relevant documents based on the given query and ranking method.
+3. Perform a query using either the TF-IDF or BM25 ranking methods by running the following command:  
+`python main.py query <ranking> <index_path> "<query>"`  
+Replace `<ranking>` with either `tfidf` or `bm25` to specify the ranking method.  
+Replace `<index_path>` with the path to the index file generated in step 2.  
+Replace `<query>` with the query string surrounded by quotes.  
+This will retrieve the top relevant documents based on the given query and ranking method.
 
 
-4. Evaluate the performance of the VSM. You can run the evaluation for both ranking methods using the following command:
->`python main.py evaluate`
-> 
-> This will compute average NDCG@k, precision, recall, and F-score for a set of queries specified in the `QUERY_DATA_PATH` variable.
+4. Evaluate the performance of the VSM. You can run the evaluation for both ranking methods using the following command:  
+`python main.py evaluate`  
+This will compute average NDCG@k, precision, recall, and F-score for a set of queries specified in the `QUERY_DATA_PATH` variable.
